@@ -71,144 +71,128 @@
         <div class="pie-chart" id="pieChart"></div>
       </div>
     </div>
+    <div class="model-container">
+      <LoadingComponent :loading="showLoading"></LoadingComponent>
+      <canvas class="canvas-3d" ref="ref3d"></canvas>
+      <div
+        id="t"
+        :class="{ animate__zoomIn: modelStatus }"
+        :style="{ left: x + 'px', top: y + 'px' }"
+        class="tip animate__animated"
+      >
+        <span class="close" @mousedown.stop="close"></span>
+        <div class="header">{{ buildingInfo?.name }}</div>
+      </div>
+    </div>
   </VScaleScreen>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { infoApi } from "../api/big-screen.js";
-import * as echarts from "echarts";
+import { computed, onMounted, ref } from "vue";
 import VScaleScreen from "v-scale-screen";
+import { userInfo, userBarChart, userPieChart, user3dModel } from "./component";
+import { Application } from "@splinetool/runtime";
+import LoadingComponent from "../../src/components/LoadingComponent.vue";
+import { getAreaInfoApi, getBuildingInfoApi } from "@/api/big-screen";
 
-//园区概况数据
-const parkInfo = ref({});
-//柱状图数据
-const parkIncomeList = ref({});
-//饼状图数据
-const pieChartData = ref([]);
+//获取收据
+const { parkInfo, parkIncomeList, pieChartData, getInfo } = userInfo();
+//柱状图
+const { initBarChart } = userBarChart(parkIncomeList);
+//饼图
+const { initPieChart } = userPieChart(pieChartData);
+//3D模型
+// const { init3dModel } = user3dModel();
+//loading加载状态
+const showLoading = ref(false);
+const showModel = ref(false);
 
-const getInfo = async () => {
-  const res = await infoApi();
-  console.log(res);
-  parkInfo.value = res.data.data.base;
-  parkIncomeList.value = res.data.data.parkIncome;
-  pieChartData.value = res.data.data.parkIndustry;
+let x = ref();
+let y = ref();
+const buildingInfo = ref({});
+const areaInfo = ref({});
+
+//#region
+// 初始化3d模型
+const publisPath = "https://fe-hmzs.itheima.net";
+const ref3d = ref(null);
+const init3dModel = () => {
+  showLoading.value = true;
+  let spline = new Application(ref3d.value);
+  spline.load(`${publisPath}/scene.splinecode`).then(() => {
+    showLoading.value = false;
+
+    spline.addEventListener("mouseDown", (e) => {
+      x.value = "";
+      y.value = "";
+      // console.log("e", e);
+      const params = e.target;
+      // console.log("obj", params);
+
+      buildingInfo.value = {};
+      areaInfo.value = {};
+
+      if (params.name.indexOf("办公楼") !== -1) {
+        // console.log("楼宇");
+        // console.log("--->", params.id);
+        getBuildingInfo(params.id);
+        window.addEventListener("mousedown", (e) => {
+          x.value = e.offsetX;
+          y.value = e.offsetY;
+        });
+      } else if (params.name.indexOf("停车场") !== -1) {
+        // console.log("停车场");
+        getAreaInfo(params.id);
+        window.addEventListener("mousedown", (e) => {
+          x.value = e.offsetX;
+          y.value = e.offsetY;
+        });
+      }
+
+      showModel.value = true;
+    });
+  });
 };
-getInfo();
-
-const initBarChart = () => {
-  const { xMonth, yIncome } = parkIncomeList.value;
-
-  const option = {
-    tooltip: {
-      trigger: "axis",
-      axisPointer: {
-        type: "shadow",
-      },
-    },
-    grid: {
-      left: "0px",
-      right: "0px",
-      bottom: "0px",
-      top: "10px",
-      containLabel: true,
-    },
-    xAxis: [
-      {
-        type: "category",
-        data: xMonth,
-      },
-    ],
-    yAxis: [
-      {
-        type: "value",
-      },
-    ],
-    series: [
-      {
-        // name: "Direct",
-        type: "bar",
-        barWidth: "10px",
-        data: yIncome.map((item, index) => {
-          const color =
-            index % 2 === 0
-              ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0.23, color: "#74c0f8" },
-                  { offset: 1, color: "rgba(116,192,248,0.00)" },
-                ])
-              : new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0.23, color: "#ff7152" },
-                  { offset: 1, color: "rgba(255,113,82,0.00)" },
-                ]);
-          return { value: item, itemStyle: { color } };
-        }),
-      },
-    ],
-    textStyle: {
-      color: "#B4C0CC",
-    },
-  };
-  var chartDom = document.getElementById("barChart");
-  var myChart = echarts.init(chartDom);
-  option && myChart.setOption(option);
+//楼宇
+const getBuildingInfo = async (id) => {
+  try {
+    const res = await getBuildingInfoApi(id);
+    console.log("res", res);
+    buildingInfo.value = res.data;
+  } catch (e) {
+    console.log(e);
+  }
 };
+//停车场
+const getAreaInfo = async (id) => {
+  try {
+    const res = await getAreaInfoApi(id);
+    console.log("area", res);
+    areaInfo.value = res.data;
+  } catch (e) {
+    console.log(e);
+  }
+};
+//#endregion
+const modelStatus = computed(() => {
+  if (x.value && y.value) {
+    return true;
+  } else {
+    return false;
+  }
+});
 
-const initPieChart = () => {
-  var chartDom = document.getElementById("pieChart");
-  var myChart = echarts.init(chartDom);
-  var option;
+const close = () => {
+  x.value = "";
+  y.value = "";
 
-  option = {
-    color: ["#00B2FF", "#2CF2FF", "#892CFF", "#FF624D", "#FFCF54", "#86ECA2"],
-    tooltip: {
-      trigger: "item",
-    },
-    legend: {
-      bottom: "0px",
-      left: "center",
-      textStyle: {
-        color: "#B4C0CC",
-      },
-      icon: "rect",
-      itemWidth: 10,
-      itemHeight: 10,
-    },
-    series: [
-      {
-        name: "园区产业分析",
-        type: "pie",
-        radius: ["65%", "70%"],
-        avoidLabelOverlap: false,
-        center: ["50%", "40%"],
-        label: {
-          show: false,
-          position: "center",
-        },
-        tooltip: {
-          trigger: "item",
-          formatter: "{a} <br/>{b} : {c} ({d}%)",
-        },
-        emphasis: {
-          label: {
-            show: false,
-            fontSize: 40,
-            fontWeight: "bold",
-          },
-        },
-        labelLine: {
-          show: false,
-        },
-        data: pieChartData.value,
-      },
-    ],
-  };
-
-  option && myChart.setOption(option);
+  console.log(x.value, y.value);
 };
 
 onMounted(async () => {
   await getInfo();
   initBarChart();
   initPieChart();
+  init3dModel();
 });
 </script>
 <style lang="scss" scoped>
@@ -327,6 +311,30 @@ onMounted(async () => {
     width: 80%;
     height: calc(100% - 30px);
     margin: auto;
+  }
+}
+.model-container {
+  width: 100%;
+  height: 100%;
+  background: black;
+  .tip {
+    width: 281px;
+    height: 140px;
+    background: url("@/assets/modal-bg.png") no-repeat;
+    background-size: cover;
+    color: #fff;
+    position: absolute;
+
+    .close {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      width: 20px;
+      height: 20px;
+      background: url("@/assets/modal-close.png") no-repeat;
+      background-size: cover;
+      cursor: pointer;
+    }
   }
 }
 </style>

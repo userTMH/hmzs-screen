@@ -5,9 +5,25 @@ export function infoApi() {
   return request({
     url: "/park/statistics/info",
     method: "get",
-    headers: {
-      Authorization:
-        "Bearer eyJhbGciOiJIUzUxMiJ9.eyJsb2dpbl91c2VyX2tleSI6IjA0ZDAwYzRmLWJkYTgtNDlhNC04OTg3LWQzZGRhY2U2OWEwZSJ9.a1-nSNqFJFmYhk21T-PoiLVEUS3pvOuUVr_KnWwBHthuIKuIO03jLz_oEecwXuqCDZv7whruifM1O7rXM6zFvw",
-    },
   });
 }
+
+// 获取点击的楼宇信息
+export const getBuildingInfoApi = (id) => {
+  console.log("===>", id);
+  return request({
+    url: "/park/statistics/building",
+    method: "get",
+    params: {
+      id,
+    },
+  });
+};
+
+// 获取点击的停车场信息
+export const getAreaInfoApi = (id) => {
+  return request({
+    url: `/parking/area/${id}`,
+    method: "get",
+  });
+};

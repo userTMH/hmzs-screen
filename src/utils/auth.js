@@ -1,7 +1,7 @@
 import Cookies from "js-cookie";
 
 //常量
-const KEY = "token";
+const KEY = "vue_admin_template_token";
 
 //获取coolies
 export const getCookie = () => {
