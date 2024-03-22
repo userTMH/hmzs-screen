@@ -2,8 +2,8 @@ import axios from "axios";
 import { getCookie } from "./auth";
 
 const instance = axios.create({
-  // baseURL: import.meta.env.VITE_APP_BASE_API,
-  baseURL: "https://api-hmzs.itheima.net/api",
+  baseURL: import.meta.env.VITE_APP_BASE_API,
+  // baseURL: "https://api-hmzs.itheima.net/api",
   timeout: 1000 * 6,
 });
 

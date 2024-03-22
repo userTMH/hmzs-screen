@@ -75,6 +75,7 @@
       <LoadingComponent :loading="showLoading"></LoadingComponent>
       <canvas class="canvas-3d" ref="ref3d"></canvas>
       <div
+        v-if="modelStatus"
         id="t"
         :class="{ animate__zoomIn: modelStatus }"
         :style="{ left: x + 'px', top: y + 'px' }"
@@ -86,7 +87,7 @@
     </div>
   </VScaleScreen>
 </template>
-<script setup lang="ts">
+<script setup>
 import { computed, onMounted, ref } from "vue";
 import VScaleScreen from "v-scale-screen";
 import { userInfo, userBarChart, userPieChart, user3dModel } from "./component";

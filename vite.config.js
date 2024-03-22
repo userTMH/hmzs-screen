@@ -2,12 +2,18 @@ import { fileURLToPath, URL } from "node:url";
 
 import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
+import qiankun from "vite-plugin-qiankun";
 
 // https://vitejs.dev/config/
-export default defineConfig((mode) => {
+export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
   return {
-    plugins: [vue()],
+    plugins: [
+      vue(),
+      qiankun("hmzs-screen", {
+        useDevMode: true,
+      }),
+    ],
     server: {
       open: true,
       port: 8888,
@@ -19,6 +25,7 @@ export default defineConfig((mode) => {
             path.replace(new RegExp(`^${env.VITE_APP_BASE_API}`), ""),
         },
       },
+      origin: "//localhost:8888",
     },
     resolve: {
       alias: {
